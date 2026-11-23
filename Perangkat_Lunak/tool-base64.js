@@ -1,0 +1,10 @@
+let handler = async (m, { command, text }) => {
+  let txt = m.quoted ? m.quoted.text ? m.quoted.text : text ? text : m.text : m.text
+  replyt(Buffer.from(txt, 'utf-8').toString('base64'), m.chat, m)
+}
+handler.help = ['base64']
+handler.tags = ['tools']
+handler.command = /^base64$/i
+handler.daftar = true
+handler.limit = 5
+export default handler

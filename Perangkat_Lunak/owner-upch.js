@@ -1,0 +1,31 @@
+const handler = async (m, { conn, text }) => {
+if(!m.quoted) return replyt('Harus Reply Media Kak Atau Kata Kata', m.chat, m)
+try {
+await conn.sendMessage(m.chat, { react: { text: '🕐', key: m.key }})
+	let q = m.quoted ? m.quoted : m
+	let mime = (q.msg || q).mimetype || q.mediaType || ''
+	let kirim = setting.idch
+	if (/video/g.test(mime)) {
+		let media = await q.download?.()
+		conn.sendMessage(kirim, { video: media, caption: m.quoted.text || text }, { quoted: m })
+	} else if (/image/g.test(mime)) {
+		let media = await q.download?.()
+		conn.sendMessage(kirim, { image: media, caption: m.quoted.text || text }, { quoted: m })
+    } else if (/audio/g.test(mime)) {
+		let media = await q.download?.()
+		conn.sendMessage(kirim, { audio: media, mimetype: 'audio/mpeg' }, { quoted: m });
+	} else {
+conn.sendMessage(kirim, { text: q.text
+}, { quoted: m });
+}
+} finally {
+await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key }})
+    replyt(`✅ Sukses mengirim pesan ke channel!\nSilahkan Akses Link Berikut:\n${setting.linkch}`, m.chat, m)
+}
+}
+
+handler.tags = ['rowner'];
+handler.command = /^(upch)$/i;
+handler.rowner = true;
+
+export default handler

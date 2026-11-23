@@ -1,0 +1,114 @@
+import cron from 'node-cron';
+import moment from 'moment-timezone';
+
+let birthdayList = []; // Daftar ulang tahun
+let autoBirthdayEnabled = false; // Status auto ulang tahun
+
+// Fungsi untuk menambahkan ulang tahun
+function addBirthday(date, message) {
+    birthdayList.push({ date, message });
+}
+
+// Fungsi untuk menghapus ulang tahun
+function deleteBirthday(message) {
+    birthdayList = birthdayList.filter(b => b.message !== message);
+}
+
+// Fungsi untuk menjadwalkan auto ulang tahun
+function scheduleAutoBirthday(conn, chatId) {
+    // Hentikan task lama jika ada
+    stopAutoBirthday();
+
+    // Jadwalkan cron setiap pukul 00:00
+    const task = cron.schedule(
+        '0 0 * * *', // Pukul 00:00 setiap hari
+        () => {
+            if (!autoBirthdayEnabled) return;
+
+            const today = moment().tz('Asia/Jakarta').format('DD/MM'); // Tanggal hari ini (tanpa tahun)
+            const birthdaysToday = birthdayList.filter(b => b.date.startsWith(today)); // Filter ulang tahun hari ini
+
+            // Kirim ucapan ulang tahun
+            birthdaysToday.forEach(({ message }) => {
+                conn.sendMessage(chatId, { text: `🎉 *Selamat Ulang Tahun!* 🎉\n\n${message}` });
+            });
+        },
+        { timezone: 'Asia/Jakarta' }
+    );
+
+    return task;
+}
+
+let birthdayTask; // Menyimpan task auto ulang tahun
+
+// Fungsi untuk menghentikan auto ulang tahun
+function stopAutoBirthday() {
+    if (birthdayTask) {
+        birthdayTask.stop();
+        birthdayTask = null;
+    }
+}
+
+// Command handler
+let handler = async (m, { conn, text, command }) => {
+    const args = text.split('|');
+    switch (command) {
+        case 'addultah': {
+            const [date, message] = args.map(v => v.trim());
+            if (!date || !message) return replyt('Format: .addultah dd/mm/yyyy|pesan', m.chat, m)
+
+            addBirthday(date, message);
+            replyt(`🎂 Ulang tahun berhasil ditambahkan:\n- Tanggal: ${date}\n- Pesan: ${message}`, m.chat, m);
+            break;
+        }
+
+        case 'delultah': {
+            const message = args[0]?.trim();
+            if (!message) return replyt('Format: .delultah pesan', m.chat, m);
+
+            deleteBirthday(message);
+            replyt(`🎂 Ulang tahun dengan pesan "${message}" berhasil dihapus.`, m.chat, m);
+            break;
+        }
+
+        case 'cekultah': {
+            if (birthdayList.length === 0) {
+                replyt('🎂 Tidak ada daftar ulang tahun.', m.chat, m);
+                return;
+            }
+
+            const list = birthdayList.map(({ date, message }, i) => `${i + 1}. ${date} - ${message}`).join('\n');
+            replyt(`🎂 Daftar Ulang Tahun:\n\n${list}`, m.chat, m);
+            break;
+        }
+
+        case 'autoultah': {
+            const status = text.trim().toLowerCase();
+
+            if (status === 'on') {
+                autoBirthdayEnabled = true;
+                birthdayTask = scheduleAutoBirthday(conn, m.chat);
+                replyt('🎂 Auto ulang tahun diaktifkan. Pengingat akan dikirim otomatis setiap pukul 00:00.', m.chat, m);
+            } else if (status === 'off') {
+                autoBirthdayEnabled = false;
+                stopAutoBirthday();
+                replyt('🎂 Auto ulang tahun dimatikan. Tidak ada pengingat ulang tahun otomatis.', m.chat, m);
+            } else {
+                replyt('Format: .autoultah on/off', m.chat, m);
+            }
+            break;
+        }
+
+        default:
+            replyt('Perintah tidak valid.', m.chat, m);
+    }
+};
+
+handler.help = ['addultah', 'delultah', 'cekultah', 'autoultah'];
+handler.tags = ['owner'];
+handler.command = /^(addultah|delultah|cekultah|autoultah)$/i;
+handler.daftar = true
+handler.group = true
+handler.owner = true
+
+export default handler;
