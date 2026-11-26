@@ -57,7 +57,7 @@
     "@google/generative-ai": "^0.11.3",
     "similarity": "^1.2.1",
     "mongoose": "github:Automattic/mongoose",
-    "jimp": "^0.22.12",
+    "jimp": "^0.16.1",
     "syntax-error": "^1.4.0",
     "file-type": "^19.6.0",
     "node-os-utils": "latest",
